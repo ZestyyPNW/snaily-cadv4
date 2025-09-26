@@ -303,28 +303,33 @@ export const typeHandlers = {
         include: { value: true, departments: { include: { value: true } } },
       });
 
-      const disconnectConnectArr = manyToManyHelper(
-        updatedValue.departments.map((v) => v.id),
-        item.departments ?? [],
-        { showUpsert: false },
-      );
+      // Only update departments if explicitly provided
+      if (typeof item.departments !== 'undefined') {
+        const disconnectConnectArr = manyToManyHelper(
+          updatedValue.departments.map((v) => v.id),
+          item.departments,
+          { showUpsert: false },
+        );
 
-      const updated = getLastOfArray(
-        await prisma.$transaction(
-          disconnectConnectArr.map((v, idx) =>
-            prisma.statusValue.update({
-              where: { id: updatedValue.id },
-              data: { departments: v },
-              include:
-                idx + 1 === disconnectConnectArr.length
-                  ? { value: true, departments: { include: { value: true } } }
-                  : undefined,
-            }),
+        const updated = getLastOfArray(
+          await prisma.$transaction(
+            disconnectConnectArr.map((v, idx) =>
+              prisma.statusValue.update({
+                where: { id: updatedValue.id },
+                data: { departments: v },
+                include:
+                  idx + 1 === disconnectConnectArr.length
+                    ? { value: true, departments: { include: { value: true } } }
+                    : undefined,
+              }),
+            ),
           ),
-        ),
-      );
+        );
 
-      return updated || updatedValue;
+        return updated || updatedValue;
+      }
+
+      return updatedValue;
     });
   },
   PENAL_CODE: async ({ body, id, context }: HandlerOptions) => {
