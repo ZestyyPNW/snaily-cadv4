@@ -49,14 +49,14 @@ export function useDefaultDepartments() {
   function makeDefaultDepartmentsValues(value: AnyValue | null) {
     const departments = makeDefaultDepartments(value);
     return departments.length <= 0
-      ? DEFAULT_DEPARTMENTS_VALUES
+      ? []
       : departments.map((value) => value.id);
   }
 
   function makeDefaultDepartmentsLabels(value: AnyValue | null) {
     const departments = makeDefaultDepartments(value);
     return departments.length <= 0
-      ? DEFAULT_DEPARTMENTS_LABELS
+      ? []
       : departments.map((value) => value.value.value);
   }
 
