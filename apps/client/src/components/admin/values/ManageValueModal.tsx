@@ -267,13 +267,13 @@ export function ManageValueModal({ onCreate, onUpdate, type, value }: Props) {
     }
   }
 
-  const INITIAL_VALUES = createInitialValues({
+  const INITIAL_VALUES = React.useMemo(() => createInitialValues({
     value,
     type,
     makeDefaultDepartmentsValues,
     defaultDivisions,
     features,
-  });
+  }), [value, type, makeDefaultDepartmentsValues, defaultDivisions, features]);
 
   function validate(values: typeof INITIAL_VALUES) {
     if (type === ValueType.LICENSE) {
@@ -308,7 +308,13 @@ export function ManageValueModal({ onCreate, onUpdate, type, value }: Props) {
       onClose={() => modalState.closeModal(ModalIds.ManageValue)}
       isOpen={modalState.isOpen(ModalIds.ManageValue)}
     >
-      <Formik validate={validate} onSubmit={onSubmit} initialValues={INITIAL_VALUES}>
+      <Formik
+        key={value?.id ?? 'new'}
+        validate={validate}
+        onSubmit={onSubmit}
+        initialValues={INITIAL_VALUES}
+        enableReinitialize={true}
+      >
         {({ setFieldValue, values, errors }) => (
           <Form>
             {type === ValueType.DIVISION ? null : (
