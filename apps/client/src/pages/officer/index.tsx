@@ -306,6 +306,10 @@ function OfficerModals() {
             onCreate={handleRecordCreate}
             type={RecordType.WRITTEN_WARNING}
           />
+          <Modals.ManageRecordModal
+            onCreate={handleRecordCreate}
+            type={RecordType.INCIDENT_REPORT}
+          />
         </>
       )}
       <Modals.NameSearchModal />
