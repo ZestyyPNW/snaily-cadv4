@@ -307,11 +307,11 @@ export const typeHandlers = {
       if (typeof item.departments !== 'undefined') {
         // Handle both department IDs and full department objects
         const departmentIds = item.departments.map((dept: any) =>
-          typeof dept === 'string' ? dept : dept.id
+          typeof dept === 'string' ? dept : (dept.valueId || dept.id)
         );
 
         const disconnectConnectArr = manyToManyHelper(
-          updatedValue.departments.map((v) => v.id),
+          updatedValue.departments.map((v) => v.valueId || v.id),
           departmentIds,
           { showUpsert: false },
         );
