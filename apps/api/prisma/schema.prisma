@@ -1881,6 +1881,7 @@ enum RecordType {
   ARREST_REPORT
   TICKET
   WRITTEN_WARNING
+  INCIDENT_REPORT
 }
 
 enum WarrantStatus {

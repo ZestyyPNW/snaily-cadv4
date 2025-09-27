@@ -220,6 +220,12 @@ export function ManageRecordModal(props: Props) {
       id: props.id ?? ModalIds.CreateWrittenWarning,
       success: "successCreateWarning",
     },
+    [RecordType.INCIDENT_REPORT]: {
+      isEdit: props.isEdit,
+      title: props.isEdit ? "editIncidentReport" : "createIncidentReport",
+      id: props.id ?? ModalIds.CreateIncidentReport,
+      success: "successCreateIncidentReport",
+    },
   };
 
   const { state, execute } = useFetch();
@@ -227,6 +233,8 @@ export function ManageRecordModal(props: Props) {
   const penalCodes =
     props.type === "WRITTEN_WARNING"
       ? penalCode.values.filter((v) => v.warningApplicableId !== null)
+      : props.type === "INCIDENT_REPORT"
+      ? [] // Incident reports don't use violations
       : penalCode.values;
 
   function handleClose() {

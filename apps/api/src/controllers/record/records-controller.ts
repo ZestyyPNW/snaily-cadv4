@@ -4,6 +4,7 @@ import {
   CREATE_WARRANT_SCHEMA,
   UPDATE_WARRANT_SCHEMA,
   CREATE_TICKET_SCHEMA_BUSINESS,
+  CREATE_INCIDENT_REPORT_SCHEMA,
 } from "@snailycad/schemas";
 import { QueryParams, BodyParams, Context, PathParams } from "@tsed/platform-params";
 import { BadRequest, NotFound } from "@tsed/exceptions";
@@ -478,7 +479,10 @@ export class RecordsController {
     @Context("activeOfficer") activeOfficer: (CombinedLeoUnit & { officers: Officer[] }) | Officer,
     @Context("sessionUserId") sessionUserId: string,
   ): Promise<APITypes.PostRecordsData> {
-    const data = validateSchema(CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS), body);
+    const data = validateSchema(
+      CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS).or(CREATE_INCIDENT_REPORT_SCHEMA),
+      body
+    );
     const officer = getUserOfficerFromActiveOfficer({
       userId: sessionUserId,
       activeOfficer,
@@ -519,7 +523,10 @@ export class RecordsController {
     @BodyParams() body: unknown,
     @PathParams("id") recordId: string,
   ): Promise<APITypes.PutRecordsByIdData> {
-    const data = validateSchema(CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS), body);
+    const data = validateSchema(
+      CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS).or(CREATE_INCIDENT_REPORT_SCHEMA),
+      body
+    );
 
     const recordItem = await upsertRecord({
       data,
