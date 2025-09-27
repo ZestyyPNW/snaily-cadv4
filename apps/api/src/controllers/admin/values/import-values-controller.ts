@@ -305,9 +305,14 @@ export const typeHandlers = {
 
       // Only update departments if explicitly provided
       if (typeof item.departments !== 'undefined') {
+        // Handle both department IDs and full department objects
+        const departmentIds = item.departments.map((dept: any) =>
+          typeof dept === 'string' ? dept : dept.id
+        );
+
         const disconnectConnectArr = manyToManyHelper(
           updatedValue.departments.map((v) => v.id),
-          item.departments,
+          departmentIds,
           { showUpsert: false },
         );
 
