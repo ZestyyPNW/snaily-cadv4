@@ -81,6 +81,11 @@ export const createArrestReportBtn: ModalButton = () => ({
   nameKey: ["Leo", "createArrestReport"],
 });
 
+export const createIncidentReportBtn: ModalButton = () => ({
+  modalId: ModalIds.CreateIncidentReport,
+  nameKey: ["Leo", "createIncidentReport"],
+});
+
 export const createBoloBtn: ModalButton = () => ({
   modalId: ModalIds.ManageBolo,
   nameKey: ["Leo", "createBolo"],

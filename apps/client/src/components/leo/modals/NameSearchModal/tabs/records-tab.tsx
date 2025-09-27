@@ -47,11 +47,13 @@ export function RecordsTab({
   const tickets = records.filter((v) => v.type === RecordType.TICKET);
   const writtenWarnings = records.filter((v) => v.type === RecordType.WRITTEN_WARNING);
   const arrestReports = records.filter((v) => v.type === RecordType.ARREST_REPORT);
+  const incidentReports = records.filter((v) => v.type === RecordType.INCIDENT_REPORT);
 
   const data: [string, string, string, Record[]][] = [
     ["tickets", t("Leo.tickets"), t("Leo.noTicketsCitizen"), tickets],
     ["writtenWarnings", t("Leo.writtenWarnings"), t("Leo.noWrittenWarnings"), writtenWarnings],
     ["arrestReports", t("Leo.arrestReports"), t("Leo.noArrestReports"), arrestReports],
+    ["incidentReports", t("Leo.incidentReports"), t("Leo.noIncidentReports"), incidentReports],
   ];
 
   function handleRecordUpdate(data: Record) {
