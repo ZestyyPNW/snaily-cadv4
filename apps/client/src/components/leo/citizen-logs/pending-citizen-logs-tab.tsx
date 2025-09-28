@@ -27,6 +27,7 @@ import { RecordsCaseNumberColumn } from "../records-case-number-column";
 import { RecordsStatsColumn } from "../records-stats-column";
 import { Editor } from "components/editor/editor";
 import { slateDataToString } from "@snailycad/utils/editor";
+import { Select } from "components/form/Select";
 
 interface Props {
   pendingCitizenRecords: GetManagePendingCitizenRecords;
@@ -40,6 +41,9 @@ const TYPE_LABELS = {
 
 export function PendingCitizenRecordsTab({ pendingCitizenRecords }: Props) {
   const [tempRecord, setTempRecord] = React.useState<Record | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = React.useState<string | undefined>(
+    undefined,
+  );
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["officer", "notifications"],
@@ -50,6 +54,23 @@ export function PendingCitizenRecordsTab({ pendingCitizenRecords }: Props) {
         pendingWeapons: number;
         pendingCitizenRecords: number;
       };
+    },
+  });
+
+  // Fetch departments for filter (LEO departments only)
+  const { data: departmentsData } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const { json } = await execute({
+        path: "/admin/values/department",
+        noToast: true,
+        params: { type: "LEO" },
+      });
+      return json as Array<{
+        type: string;
+        values: Array<{ id: string; value: { value: string } }>;
+        totalCount: number;
+      }>;
     },
   });
 
@@ -65,6 +86,13 @@ export function PendingCitizenRecordsTab({ pendingCitizenRecords }: Props) {
     totalCount: pendingCitizenRecords.totalCount,
     initialData: pendingCitizenRecords.pendingCitizenRecords,
   });
+
+  // Update filters when department selection changes
+  React.useEffect(() => {
+    asyncTable.setFilters({
+      departmentId: selectedDepartmentId,
+    });
+  }, [selectedDepartmentId, asyncTable]);
 
   const modalState = useModal();
   const { generateCallsign } = useGenerateCallsign();
@@ -110,6 +138,25 @@ export function PendingCitizenRecordsTab({ pendingCitizenRecords }: Props) {
       }`}
       value="pending-citizen-records-tab"
     >
+      <div className="flex items-center gap-2 mb-4">
+        <select
+          name="departmentFilter"
+          value={selectedDepartmentId || "all"}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSelectedDepartmentId(value === "all" ? undefined : value);
+          }}
+          className="w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
+          <option value="all">All Departments</option>
+          {departmentsData?.[0]?.values.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.value.value}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {asyncTable.noItemsAvailable ? (
         <p className="mt-5">{t("noCitizenLogs")}</p>
       ) : (

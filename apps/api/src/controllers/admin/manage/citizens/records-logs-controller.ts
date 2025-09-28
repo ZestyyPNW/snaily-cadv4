@@ -88,14 +88,22 @@ export class AdminManageCitizensController {
   async getPendingCitizenRecords(
     @QueryParams("skip", Number) skip = 0,
     @QueryParams("includeAll", Boolean) includeAll = false,
+    @QueryParams("departmentId", String) departmentId?: string,
   ): Promise<APITypes.GetManagePendingCitizenRecords> {
+    const whereClause = {
+      records: {
+        status: WhitelistStatus.PENDING,
+        ...(departmentId ? { officer: { departmentId } } : {}),
+      },
+    };
+
     const [totalCount, pendingCitizenRecords] = await prisma.$transaction([
       prisma.recordLog.count({
-        where: { records: { status: WhitelistStatus.PENDING } },
+        where: whereClause,
       }),
       prisma.recordLog.findMany({
         orderBy: { createdAt: "desc" },
-        where: { records: { status: WhitelistStatus.PENDING } },
+        where: whereClause,
         take: includeAll ? undefined : 35,
         skip: includeAll ? undefined : skip,
         include: {

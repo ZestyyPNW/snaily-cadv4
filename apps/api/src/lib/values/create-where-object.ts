@@ -83,6 +83,17 @@ export function createSearchWhereObject(options: CreateSearchWhereObjectOptions)
       };
     }
 
+    if (ValueType.DEPARTMENT === type) {
+      const departmentType = options.queryParams.type;
+
+      if (departmentType) {
+        where = {
+          ...where,
+          type: departmentType,
+        };
+      }
+    }
+
     return where;
   }
 
