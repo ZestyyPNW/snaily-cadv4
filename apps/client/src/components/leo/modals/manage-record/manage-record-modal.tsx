@@ -1,5 +1,9 @@
 import * as React from "react";
-import { CREATE_TICKET_SCHEMA, CREATE_TICKET_SCHEMA_BUSINESS } from "@snailycad/schemas";
+import {
+  CREATE_TICKET_SCHEMA,
+  CREATE_TICKET_SCHEMA_BUSINESS,
+  CREATE_INCIDENT_REPORT_SCHEMA,
+} from "@snailycad/schemas";
 import {
   Loader,
   Button,
@@ -234,8 +238,8 @@ export function ManageRecordModal(props: Props) {
     props.type === "WRITTEN_WARNING"
       ? penalCode.values.filter((v) => v.warningApplicableId !== null)
       : props.type === "INCIDENT_REPORT"
-      ? [] // Incident reports don't use violations
-      : penalCode.values;
+        ? [] // Incident reports don't use violations
+        : penalCode.values;
 
   function handleClose() {
     props.onClose?.();
@@ -254,7 +258,10 @@ export function ManageRecordModal(props: Props) {
       values,
       publishStatus: PublishStatus.PUBLISHED,
     });
-    validateRecords(values.violations, helpers);
+    // Only validate violations for non-incident reports
+    if (props.type !== RecordType.INCIDENT_REPORT) {
+      validateRecords(values.violations, helpers);
+    }
 
     if (props.customSubmitHandler) {
       const closable = await props.customSubmitHandler({ ...requestData, id: props.record?.id });
@@ -306,7 +313,12 @@ export function ManageRecordModal(props: Props) {
     businessId?: string;
     businessName?: string;
   }>(data[props.type].id);
-  const schema = isBusinessRecord ? CREATE_TICKET_SCHEMA_BUSINESS : CREATE_TICKET_SCHEMA;
+  const schema =
+    props.type === RecordType.INCIDENT_REPORT
+      ? CREATE_INCIDENT_REPORT_SCHEMA
+      : isBusinessRecord
+        ? CREATE_TICKET_SCHEMA_BUSINESS
+        : CREATE_TICKET_SCHEMA;
   const validate = handleValidate(schema);
 
   const INITIAL_VALUES = createInitialRecordValues({
@@ -319,20 +331,27 @@ export function ManageRecordModal(props: Props) {
   });
 
   const tabs = React.useMemo(() => {
-    const _tabs = [
-      { name: t("generalInformation"), value: "general-information-tab" },
-      { name: t("violations"), value: "violations-tab" },
-      { name: t("seizedItems"), value: "seized-items-tab" },
+    const _tabs = [{ name: t("generalInformation"), value: "general-information-tab" }];
+
+    // Only show violations and seized items tabs for non-incident reports
+    if (props.type !== RecordType.INCIDENT_REPORT) {
+      _tabs.push(
+        { name: t("violations"), value: "violations-tab" },
+        { name: t("seizedItems"), value: "seized-items-tab" },
+      );
+    }
+
+    _tabs.push(
       { name: t("vehicleInformation"), value: "vehicle-tab" },
       { name: t("connections"), value: "connections-tab" },
-    ];
+    );
 
     if (!props.isEdit) {
       _tabs.unshift({ name: t("drafts"), value: "drafts-tab" });
     }
 
     return _tabs;
-  }, [t, props.isEdit]);
+  }, [t, props.isEdit, props.type]);
 
   return (
     <Modal
@@ -419,48 +438,42 @@ export function ManageRecordModal(props: Props) {
 
                 <AddressPostalSelect isDisabled={props.isReadOnly} postalOptional={false} />
 
-                {/* todo: custom component for this */}
-                <FormField className="relative mt-3 mb-2" label={tCourt("courtEntries")}>
-                  <Button
-                    className="absolute right-0 top-0"
-                    type="button"
-                    onPress={() => modalState.openModal(ModalIds.ManageCourtEntry)}
-                  >
-                    {tCourt("manageCourtEntry")}
-                  </Button>
+                {/* Court entries - only show for non-incident reports */}
+                {props.type !== RecordType.INCIDENT_REPORT && (
+                  <FormField className="relative mt-3 mb-2" label={tCourt("courtEntries")}>
+                    <Button
+                      className="absolute right-0 top-0"
+                      type="button"
+                      onPress={() => modalState.openModal(ModalIds.ManageCourtEntry)}
+                    >
+                      {tCourt("manageCourtEntry")}
+                    </Button>
 
-                  {values.courtEntry?.dates
-                    ? values.courtEntry.dates.map((date, idx) => (
-                        <FullDate onlyDate key={idx}>
-                          {date.date}
-                        </FullDate>
-                      ))
-                    : "None"}
-                </FormField>
+                    {values.courtEntry?.dates
+                      ? values.courtEntry.dates.map((date, idx) => (
+                          <FullDate onlyDate key={idx}>
+                            {date.date}
+                          </FullDate>
+                        ))
+                      : "None"}
+                  </FormField>
+                )}
 
-                <FormField optional label={t("notes")} errorMessage={errors.notes}>
+                <FormField label={t("narrative")} errorMessage={errors.notes}>
                   <Editor
                     value={values.descriptionData}
                     onChange={(v) => setFieldValue("descriptionData", v)}
                   />
                 </FormField>
-
-                <SwitchField
-                  isDisabled={props.isReadOnly}
-                  isSelected={values.paymentStatus === PaymentStatus.PAID}
-                  onChange={(isSelected) => {
-                    setFieldValue(
-                      "paymentStatus",
-                      isSelected ? PaymentStatus.PAID : PaymentStatus.UNPAID,
-                    );
-                  }}
-                >
-                  {t("recordPaid")}
-                </SwitchField>
               </TabsContent>
 
-              <SeizedItemsTab isReadOnly={props.isReadOnly} />
-              <ViolationsTab penalCodes={penalCodes} isReadOnly={props.isReadOnly} />
+              {/* Only show violations and seized items tabs for non-incident reports */}
+              {props.type !== RecordType.INCIDENT_REPORT && (
+                <>
+                  <SeizedItemsTab isReadOnly={props.isReadOnly} />
+                  <ViolationsTab penalCodes={penalCodes} isReadOnly={props.isReadOnly} />
+                </>
+              )}
               <VehicleTab isReadOnly={props.isReadOnly} />
               <ConnectionsTab record={props.record} isReadOnly={props.isReadOnly} />
             </TabList>

@@ -50,20 +50,16 @@ export const CREATE_TICKET_SCHEMA = z.object({
 });
 
 export const CREATE_INCIDENT_REPORT_SCHEMA = z.object({
-  type: z.string().min(2).max(255).regex(/INCIDENT_REPORT/),
+  type: z
+    .string()
+    .min(2)
+    .max(255)
+    .regex(/INCIDENT_REPORT/),
   publishStatus: z.string().regex(publishStatus).nullish(),
   citizenId: z.string().min(2).max(255).optional(),
-  violations: z.array(VIOLATION).optional(), // Optional for incident reports
-  seizedItems: z.array(SEIZED_ITEM_SCHEMA).optional(),
   postal: z.string().min(1).max(255),
   notes: z.string().nullish(),
   descriptionData: z.any(),
-  paymentStatus: z
-    .string()
-    .regex(/PAID|UNPAID/)
-    .optional()
-    .nullable(),
-  courtEntry: COURT_ENTRY_SCHEMA.nullish(),
   vehicleId: z.string().nullish(),
   businessId: z.string().nullish(),
   reportFields: z.any().optional(),

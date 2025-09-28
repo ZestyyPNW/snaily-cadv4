@@ -25,6 +25,9 @@ export function BusinessSearchTabsContainer() {
   const writtenWarningsLength = currentResult.Record.filter(
     (v) => v.type === RecordType.WRITTEN_WARNING,
   ).length;
+  const incidentReportsLength = currentResult.Record.filter(
+    (v) => v.type === RecordType.INCIDENT_REPORT,
+  ).length;
 
   const TABS = [
     { name: t("Business.employees"), value: "business-search-employees-tab" },
@@ -32,6 +35,7 @@ export function BusinessSearchTabsContainer() {
     { value: "tickets", name: `${t("Leo.tickets")} (${ticketsLength})` },
     { value: "arrestReports", name: `${t("Leo.arrestReports")} (${arrestReportsLength})` },
     { value: "writtenWarnings", name: `${t("Leo.writtenWarnings")} (${writtenWarningsLength})` },
+    { value: "incidentReports", name: `${t("Leo.incidentReports")} (${incidentReportsLength})` },
   ];
 
   return (

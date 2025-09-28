@@ -99,16 +99,40 @@ export class RecordsController {
 
   @Delete("/drafts/:id")
   async deleteDraftRecordById(@Context("user") user: User, @PathParams("id") id: string) {
-    const record = await prisma.record
-      .delete({
-        where: {
-          id,
-          officer: { userId: user.id },
-        },
+    // Use a transaction to ensure all deletions happen atomically
+    const result = await prisma
+      .$transaction(async (tx) => {
+        // First, delete all related records to avoid foreign key constraints
+        await tx.violation.deleteMany({
+          where: { records: { some: { id } } },
+        });
+
+        await tx.seizedItem.deleteMany({
+          where: { recordId: id },
+        });
+
+        await tx.recordLog.deleteMany({
+          where: { recordId: id },
+        });
+
+        // Delete any expungement requests related to this record
+        await tx.expungementRequest.deleteMany({
+          where: { records: { some: { id } } },
+        });
+
+        // Finally, delete the main record
+        const record = await tx.record.delete({
+          where: {
+            id,
+            officer: { userId: user.id },
+          },
+        });
+
+        return record;
       })
       .catch(() => null);
 
-    return !!record;
+    return !!result;
   }
 
   @Get("/active-warrants")
@@ -481,7 +505,7 @@ export class RecordsController {
   ): Promise<APITypes.PostRecordsData> {
     const data = validateSchema(
       CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS).or(CREATE_INCIDENT_REPORT_SCHEMA),
-      body
+      body,
     );
     const officer = getUserOfficerFromActiveOfficer({
       userId: sessionUserId,
@@ -525,7 +549,7 @@ export class RecordsController {
   ): Promise<APITypes.PutRecordsByIdData> {
     const data = validateSchema(
       CREATE_TICKET_SCHEMA.or(CREATE_TICKET_SCHEMA_BUSINESS).or(CREATE_INCIDENT_REPORT_SCHEMA),
-      body
+      body,
     );
 
     const recordItem = await upsertRecord({

@@ -6,7 +6,11 @@ import {
   type Violation,
   PublishStatus,
 } from "@prisma/client";
-import type { CREATE_TICKET_SCHEMA, CREATE_TICKET_SCHEMA_BUSINESS } from "@snailycad/schemas";
+import type {
+  CREATE_TICKET_SCHEMA,
+  CREATE_TICKET_SCHEMA_BUSINESS,
+  CREATE_INCIDENT_REPORT_SCHEMA,
+} from "@snailycad/schemas";
 import { type PaymentStatus, type RecordType, WhitelistStatus } from "@snailycad/types";
 import { NotFound } from "@tsed/exceptions";
 import { isFeatureEnabled } from "lib/upsert-cad";
@@ -21,7 +25,11 @@ import { captureException } from "@sentry/node";
 import { userProperties } from "~/lib/auth/getSessionUser";
 
 interface UpsertRecordOptions {
-  data: z.infer<typeof CREATE_TICKET_SCHEMA | typeof CREATE_TICKET_SCHEMA_BUSINESS>;
+  data: z.infer<
+    | typeof CREATE_TICKET_SCHEMA
+    | typeof CREATE_TICKET_SCHEMA_BUSINESS
+    | typeof CREATE_INCIDENT_REPORT_SCHEMA
+  >;
   recordId: string | null;
   cad: { features?: Record<Feature, boolean> };
   officerId?: string | null;
@@ -152,32 +160,38 @@ export async function upsertRecord(options: UpsertRecordOptions) {
     });
   }
 
-  const validatedViolationsResults = await Promise.allSettled(
-    options.data.violations.map((v) =>
-      validateRecordData({ ...v, ticketId: ticket.id, cad: options.cad }),
-    ),
-  );
-  const fullFilledValidatedViolations = validatedViolationsResults
-    .filter((v) => v.status === "fulfilled")
-    // @ts-expect-error - we know it's fulfilled
-    .map((v) => v.value) as Awaited<ReturnType<typeof validateRecordData>>[];
+  // Only process violations for non-incident reports
+  let fullFilledValidatedViolations: Awaited<ReturnType<typeof validateRecordData>>[] = [];
+  let errors = {};
 
-  const failedValidatedViolations = validatedViolationsResults
-    .filter((v) => v.status === "rejected")
-    // @ts-expect-error - we know it's rejected
-    .map((v) => v.reason);
+  if (options.data.type !== "INCIDENT_REPORT") {
+    const validatedViolationsResults = await Promise.allSettled(
+      options.data.violations.map((v) =>
+        validateRecordData({ ...v, ticketId: ticket.id, cad: options.cad }),
+      ),
+    );
+    fullFilledValidatedViolations = validatedViolationsResults
+      .filter((v) => v.status === "fulfilled")
+      // @ts-expect-error - we know it's fulfilled
+      .map((v) => v.value) as Awaited<ReturnType<typeof validateRecordData>>[];
 
-  if (failedValidatedViolations.length >= 1) {
-    captureException({
-      message: "Unable to validate violations",
-      violations: JSON.stringify(failedValidatedViolations),
-    });
+    const failedValidatedViolations = validatedViolationsResults
+      .filter((v) => v.status === "rejected")
+      // @ts-expect-error - we know it's rejected
+      .map((v) => v.reason);
+
+    if (failedValidatedViolations.length >= 1) {
+      captureException({
+        message: "Unable to validate violations",
+        violations: JSON.stringify(failedValidatedViolations),
+      });
+    }
+
+    errors = fullFilledValidatedViolations.reduce(
+      (prev, current) => ({ ...prev, ...current.errors }),
+      {},
+    );
   }
-
-  const errors = fullFilledValidatedViolations.reduce(
-    (prev, current) => ({ ...prev, ...current.errors }),
-    {},
-  );
 
   if (Object.keys(errors).length >= 1) {
     await prisma.record.delete({ where: { id: ticket.id } });
@@ -194,40 +208,52 @@ export async function upsertRecord(options: UpsertRecordOptions) {
       throw new NotFound("notFound");
     }
 
-    await Promise.all([unlinkViolations(record.violations), unlinkSeizedItems(record.seizedItems)]);
+    // Only unlink violations and seized items for non-incident reports
+    if (options.data.type !== "INCIDENT_REPORT") {
+      await Promise.all([
+        unlinkViolations(record.violations),
+        unlinkSeizedItems(record.seizedItems),
+      ]);
+    }
   }
 
-  const violations = await prisma.$transaction(
-    fullFilledValidatedViolations.map((item) => {
-      return prisma.violation.create({
-        data: {
-          counts: item.counts,
-          fine: item.fine,
-          bail: item.bail,
-          jailTime: item.jailTime,
-          communityService: item.communityService,
-          penalCode: { connect: { id: item.penalCodeId } },
-          records: { connect: { id: ticket.id } },
-        },
-        include: {
-          penalCode: { include: { warningApplicable: true, warningNotApplicable: true } },
-        },
-      });
-    }),
-  );
+  // Only process violations and seized items for non-incident reports
+  let violations = [];
+  let seizedItems = [];
 
-  const seizedItems = await prisma.$transaction(
-    (options.data.seizedItems ?? []).map((item) => {
-      return prisma.seizedItem.create({
-        data: {
-          item: item.item,
-          illegal: item.illegal ?? false,
-          quantity: item.quantity ?? 1,
-          recordId: ticket.id,
-        },
-      });
-    }),
-  );
+  if (options.data.type !== "INCIDENT_REPORT") {
+    violations = await prisma.$transaction(
+      fullFilledValidatedViolations.map((item) => {
+        return prisma.violation.create({
+          data: {
+            counts: item.counts,
+            fine: item.fine,
+            bail: item.bail,
+            jailTime: item.jailTime,
+            communityService: item.communityService,
+            penalCode: { connect: { id: item.penalCodeId } },
+            records: { connect: { id: ticket.id } },
+          },
+          include: {
+            penalCode: { include: { warningApplicable: true, warningNotApplicable: true } },
+          },
+        });
+      }),
+    );
+
+    seizedItems = await prisma.$transaction(
+      (options.data.seizedItems ?? []).map((item) => {
+        return prisma.seizedItem.create({
+          data: {
+            item: item.item,
+            illegal: item.illegal ?? false,
+            quantity: item.quantity ?? 1,
+            recordId: ticket.id,
+          },
+        });
+      }),
+    );
+  }
 
   return { ...ticket, violations, seizedItems, courtEntry };
 }
