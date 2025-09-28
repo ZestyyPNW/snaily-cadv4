@@ -35,6 +35,9 @@ export function NameSearchTabsContainer() {
   const writtenWarningsLength = currentResult.Record.filter(
     (v) => v.type === RecordType.WRITTEN_WARNING,
   ).length;
+  const incidentReportsLength = currentResult.Record.filter(
+    (v) => v.type === RecordType.INCIDENT_REPORT,
+  ).length;
   const warrantsLength = currentResult.warrants.length;
   const notesLength = currentResult.notes?.length ?? 0;
 
@@ -44,6 +47,7 @@ export function NameSearchTabsContainer() {
     { value: "tickets", name: `${t("Leo.tickets")} (${ticketsLength})` },
     { value: "arrestReports", name: `${t("Leo.arrestReports")} (${arrestReportsLength})` },
     { value: "writtenWarnings", name: `${t("Leo.writtenWarnings")} (${writtenWarningsLength})` },
+    { value: "incidentReports", name: `${t("Leo.incidentReports")} (${incidentReportsLength})` },
     { value: "warrants", name: `${t("Leo.warrants")} (${warrantsLength})` },
     { value: "notes", name: `${t("Leo.notes")} (${notesLength})` },
   ];

@@ -27,6 +27,7 @@
     "createWrittenWarning": "Create Written Warning",
     "createIncidentReport": "Create Incident Report",
     "editIncidentReport": "Edit Incident Report",
+    "narrative": "Narrative",
     "createBolo": "Create Bolo",
     "nameSearch": "Name Search",
     "addressSearch": "Address Search",

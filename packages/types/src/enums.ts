@@ -244,6 +244,7 @@ export const RecordType = {
   ARREST_REPORT: "ARREST_REPORT",
   TICKET: "TICKET",
   WRITTEN_WARNING: "WRITTEN_WARNING",
+  INCIDENT_REPORT: "INCIDENT_REPORT",
 } as const;
 
 export type RecordType = (typeof RecordType)[keyof typeof RecordType];

@@ -43,6 +43,7 @@ export function VehicleTab(props: VehicleTabProps) {
         isDisabled={props.isReadOnly}
         allowsCustomValue
         autoFocus
+        isOptional
         onInputChange={(value) => setFieldValue("plateOrVinSearch", value)}
         onSelectionChange={(node) => {
           if (node?.value) {
@@ -80,6 +81,7 @@ export function VehicleTab(props: VehicleTabProps) {
         isDisabled={props.isReadOnly}
         onChange={(value) => setFieldValue("vehicleModel", value)}
         errorMessage={errors.vehicleModel}
+        isOptional
       />
 
       <TextField
@@ -88,6 +90,7 @@ export function VehicleTab(props: VehicleTabProps) {
         isDisabled={props.isReadOnly}
         onChange={(value) => setFieldValue("vehicleColor", value)}
         errorMessage={errors.vehicleColor}
+        isOptional
       />
 
       <FormRow useFlex>
